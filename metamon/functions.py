@@ -2,6 +2,8 @@ import math
 import statistics
 from decimal import Decimal
 from fractions import Fraction
+import numpy as np
+from scipy import stats
 
 def parse_file_to_data_dict(file_path, separator=','):
     data_dict = dict()
@@ -73,7 +75,7 @@ def _get_storage_types(values):
             storage_types.add('string')
         elif value_type in [int, float, Decimal, Fraction]:
             storage_types.add('number')
-    return list(storage_types)
+    return sorted(list(storage_types))
 
 def _all_values_booleans(values):
     all_values_boolean = True
@@ -105,7 +107,9 @@ def _all_values_numbers(values):
     values_as_numbers = list()
     for value in values:
         value_type = type(value)
-        if value is None or value_type in [bool, int, float, Decimal, Fraction]:
+        if value is None:
+            pass
+        elif value_type in [bool, int, float, Decimal, Fraction]:
             if value_type == bool:
                 values_as_numbers.append(int(value))
             else:
@@ -126,19 +130,36 @@ def _all_values_numbers(values):
     return all_values_numbers, values_as_numbers
 
 def get_metadata_from_data_dict(data_dict, num_buckets=10, max_num_unique_values=10):
+    """
+    if all values can be expressed as 0 or 1
+        return binary
+    else:
+        if the number of unique values is less than 10 * log10(number of rows):
+            categorical
+        else:
+            if all values can be expressed as number:
+                numeric
+            else
+                textual
+
+    information to return across all types: meaning_type, storage_types, nullable
+    information to return when binary, categorical and textual: unique_values
+    information to return when numeric: buckets, min, median and max
+    """
+
     metadata = dict()
     for key in data_dict.keys():
-        values = data_dict['key']
+        values = data_dict[key]
         if not values:
             metadata[key] = {'meaning_type': 'empty'}
         else:
             unique_values = list(set(values))
             nullable = True if '' in unique_values or None in unique_values else False
             num_values = len(values)
-            num_unique_values = len(num_unique_values)
+            num_unique_values = len(unique_values)
             if num_unique_values > max_num_unique_values:
                 unique_values = unique_values[:max_num_unique_values] + ['TRUNCATED']
-            storage_types = _get_storage_types(unique_values)
+            storage_types = _get_storage_types(values)
 
             if _all_values_booleans(values):
                 metadata[key] = {
@@ -149,7 +170,7 @@ def get_metadata_from_data_dict(data_dict, num_buckets=10, max_num_unique_values
                     , 'nullable': nullable
                 }
             else:
-                if num_unique_values < 10 * math.log10(num_values):
+                if num_unique_values <= 10 * max(math.log10(num_values), 1):
                     metadata[key] = {
                         'meaning_type': 'categorical'
                         , 'storage_types': storage_types
@@ -162,7 +183,7 @@ def get_metadata_from_data_dict(data_dict, num_buckets=10, max_num_unique_values
                     if all_values_numbers:
                         metadata[key] = {
                             'meaning_type': 'numeric'
-                            , 'buckets': get_buckets(values_as_numbers, num_buckets)
+                            , 'buckets': np.round(stats.mstats.mquantiles(values_as_numbers, np.arange(0.0, 1.0+1.0/num_buckets, 1.0/num_buckets)), 2).tolist()
                             , 'min': min(values_as_numbers)
                             , 'median': statistics.median(values_as_numbers)
                             , 'max': max(values_as_numbers)
@@ -178,31 +199,8 @@ def get_metadata_from_data_dict(data_dict, num_buckets=10, max_num_unique_values
                         }
     return metadata
             
+def get_metadata_from_file(file_path, separator=',', num_buckets=10):
+    return get_metadata_from_data_dict(parse_file_to_data_dict(file_path, separator), num_buckets)
 
-'''
-
-if all values can be expressed as 0 or 1
-    return binary
-else:
-    if the number of unique values is less than 10 * log10(number of rows):
-        categorical
-    else:
-        if all values can be expressed as number:
-            numeric
-        else
-            textual
-
-meaning_type
-storage_types
-nullable
-    binary
-    categorical
-    textual
-        unique_values
-    numeric
-        buckets
-        min
-        median
-        max
-
-'''
+def process_data_dict_by_metadata(data_dict, metadata):
+    pass
