@@ -10,15 +10,19 @@ setup(name='metamon',
         'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Information Analysis'
     ],
-    keywords='metadata,descriptive analytics',
-    url='https://github.com/knowru/metamon/',
+    keywords='metadata, descriptive analytics',
     author='Ken Park',
     author_email='spark@example.com',
     license='MIT',
     packages=['metamon'],
     install_requires=[
-        'numpy'
+        'coverage==4.4.2',
+        'nose2==0.7.3',
+        'numpy==1.14.0',
+        'scipy==1.0.0',
+        'six==1.11.0'
     ],
     include_package_data=True,
-    zip_safe=False
+    zip_safe=False,
+    tests_require=['nose2']
 )
