@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='metamon',
-    version='0.1',
+    version='0.1.1',
     description='Procuce metadata for your data',
     url='http://github.com/knowru/metamon',
     classifiers=[
