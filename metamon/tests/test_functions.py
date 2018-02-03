@@ -191,7 +191,7 @@ class GetMetadataFromDataDictTestCase(unittest.TestCase):
         metadata = get_metadata_from_data_dict({'variable': [1, -1.1, '2.0']})
         self.assertEqual(metadata['variable']['meaning_type'], 'categorical')
         self.assertEqual(metadata['variable']['storage_types'], ['number', 'string'])
-        self.assertEqual(metadata['variable']['unique_values'], [1, -1.1, '2.0'])
+        self.assertEqual(set(metadata['variable']['unique_values']), set([1, -1.1, '2.0']))
         self.assertEqual(metadata['variable']['number_of_unique_values'], 3)
         self.assertEqual(metadata['variable']['nullable'], False)
 
@@ -322,24 +322,24 @@ class ProcessDataDictByMetadataTestCase(unittest.TestCase):
 
     def test_categorical(self):
         processed_data_dict = process_data_dict_by_metadata(
-            {'variable': ['t', 'f', '0', '1', 'tRuE', 'fAlSe', True, False, 0.0, 1.0, 'a', 'a', 'b', 'b', 'c', 'c', 1, 1, 1]}
+            {'variable': ['t', 'f', '0', '1', 'tRuE', 'fAlSe', True, False, 0.0, 1.0, 'a', 'a', 'b', 'b', 'c', 'c', 1, 1, 1, 1.2]}
             , {'variable': {'meaning_type': 'categorical'}}
         )
         self.assertEqual(processed_data_dict, {'variable': ['"t"', '"f"', '"0"', '"1"', '"tRuE"', '"fAlSe"', True, False, 0, 1, '"a"', '"a"', '"b"', '"b"', '"c"', '"c"', 1, 1, 1, 1.2]})
 
     def test_textual(self):
         processed_data_dict = process_data_dict_by_metadata(
-            {'variable': ['"t"', '"f"', '"0"', '"1"', '"tRuE"', '"fAlSe"', True, False, 0.0, 1.0, '"a"', '"a"', '"b"', '"b"', '"c"', '"c"', 1, 1, 1, 1.2]}
+            {'variable': ['t', 'f', '0', '1', 'tRuE', 'fAlSe', True, False, 0.0, 1.0, 'a', 'a', 'b', 'b', 'c', 'c', 1, 1, 1, 1.2]}
             , {'variable': {'meaning_type': 'textual'}}
         )
         self.assertEqual(processed_data_dict, {'variable': ['"t"', '"f"', '"0"', '"1"', '"tRuE"', '"fAlSe"', True, False, 0, 1, '"a"', '"a"', '"b"', '"b"', '"c"', '"c"', 1, 1, 1, 1.2]})
 
     def test_numeric(self):
         processed_data_dict = process_data_dict_by_metadata(
-            {'variable': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-            , {'variable': {'meaning_type': 'numeric', 'buckets': [1, 5, 10]}}
+            {'x': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+            , {'x': {'meaning_type': 'numeric', 'buckets': [1, 5, 10]}}
         )
-        self.assertEqual(processed_data_dict, {'variable': ['1<=x<5', '1<=x<5', '1<=x<5', '1<=x<5', '5<=x<10', '5<=x<10', '5<=x<10', '5<=x<10', '5<=x<10', '10<=x']})
+        self.assertEqual(processed_data_dict, {'x': ['1<=x<5', '1<=x<5', '1<=x<5', '1<=x<5', '5<=x<10', '5<=x<10', '5<=x<10', '5<=x<10', '5<=x<10', '10<=x']})
 
 if __name__ == '__main__':
     unittest.main()

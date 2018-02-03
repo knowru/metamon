@@ -203,4 +203,63 @@ def get_metadata_from_file(file_path, separator=',', num_buckets=10):
     return get_metadata_from_data_dict(parse_file_to_data_dict(file_path, separator), num_buckets)
 
 def process_data_dict_by_metadata(data_dict, metadata):
-    pass
+    processed_data_dict = dict()
+    for key in data_dict.keys():
+        processed_data_dict[key] = list()
+        if metadata[key]['meaning_type'] in ['categorical', 'textual']:
+            for value in data_dict[key]:
+                if isinstance(value, str):
+                    processed_data_dict[key].append('\"{}\"'.format(value))
+                else:
+                    processed_data_dict[key].append(value)
+        elif metadata[key]['meaning_type'] == 'binary':
+            for value in data_dict[key]:
+                if isinstance(value, bool):
+                    processed_data_dict[key].append(value)
+                elif type(value) in [int, float, Decimal, Fraction]:
+                    if value == 0:
+                        processed_data_dict[key].append(False)
+                    else:
+                        processed_data_dict[key].append(True)
+                else:
+                    try:
+                        lowered_value = value.lower()
+                    except AttributeError:
+                        if value:
+                            processed_data_dict[key].append(True)
+                        else:
+                            processed_data_dict[key].append(False)
+                    else:
+                        if lowered_value in ['f', 'false', '0']:
+                            processed_data_dict[key].append(False)
+                        else:
+                            processed_data_dict[key].append(True)
+        elif metadata[key]['meaning_type'] == 'numeric':
+            for value in data_dict[key]:
+                if not value:
+                    processed_data_dict[key].append(value)
+                else:
+                    if not type(value) in [int, float, Decimal, Fraction]:
+                            try:
+                                number = int(value)
+                            except ValueError:
+                                try:
+                                    number = float(value)
+                                except ValueError:
+                                    raise ValueError('Metadata says a variable is a number but some values of it are not numbers: variable name - {}, value - {}'.format(key, value))
+                    else:
+                        number = value
+
+                    if metadata[key]['buckets']:
+                        if number < metadata[key]['buckets'][0]:
+                            processed_data_dict[key].append('{}<{}'.format(key, metadata[key]['buckets'][0]))
+                        elif number >= metadata[key]['buckets'][-1]:
+                            processed_data_dict[key].append('{}<={}'.format(metadata[key]['buckets'][-1], key))
+                        else:
+                            for boundary_index, boundary in enumerate(metadata[key]['buckets']):
+                                if number >= boundary and number < metadata[key]['buckets'][boundary_index+1]:
+                                    processed_data_dict[key].append('{}<={}<{}'.format(boundary, key, metadata[key]['buckets'][boundary_index+1]))
+                                    break
+                    else:
+                        processed_data_dict[key].append('-inf<{}<inf'.format(key))
+        return processed_data_dict
