@@ -19,7 +19,7 @@ setup(name='metamon',
         'coverage==4.4.2',
         'nose2==0.7.3',
         'numpy==1.14.0',
-        'scipy==1.0.0',
+        'scipy==1.10.0',
         'six==1.11.0'
     ],
     include_package_data=True,
